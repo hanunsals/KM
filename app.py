@@ -47,3 +47,17 @@ if st.button("Analisis Sentimen"):
         st.write(f"Hasil analisis sentimen: **{sentiment}**")
     else:
         st.write("Silakan masukkan teks untuk dianalisis.")
+
+import os
+import joblib
+
+# Dapatkan direktori saat ini
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Path ke model dan vectorizer
+model_path = os.path.join(current_dir, "svm_model.pkl")
+vectorizer_path = os.path.join(current_dir, "tfidf_vectorizer.pkl")
+
+# Load model
+svm_model = joblib.load(model_path)
+tfidf_vectorizer = joblib.load(vectorizer_path)
