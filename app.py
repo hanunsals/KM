@@ -15,8 +15,8 @@ nltk.download('punkt')
 
 # Mendapatkan path direktori saat ini untuk memastikan file model bisa diakses
 current_dir = os.path.dirname(os.path.abspath(__file__))  
-model_path = os.path.join(current_dir, "svm_model.pkl")  # Path model SVM
-vectorizer_path = os.path.join(current_dir, "tfidf_vectorizer.pkl")  # Path TF-IDF Vectorizer
+model_path = os.path.join(current_dir, "svm_model.pkl")  # Model ini sudah dilatih sebelumnya untuk mengenali pola sentimen dalam data
+vectorizer_path = os.path.join(current_dir, "tfidf_vectorizer.pkl")  # TF-IDF digunakan karena dapat mengubah teks menjadi representasi numerik yang lebih baik 
 
 # Memuat model SVM dan TF-IDF Vectorizer yang telah dilatih sebelumnya
 svm_model = joblib.load(model_path)  
@@ -48,7 +48,6 @@ def handle_negation(text):
         r"\btidak bodoh\b": "pintar",
         r"\btidak lambat\b": "cepat",
         r"\btidak mahal\b": "murah",
-        r"\btidak buruk\b": "baik",
         r"\btidak sulit\b": "mudah",
         r"\btidak salah\b": "benar",
         r"\btidak lemah\b": "kuat"
@@ -56,6 +55,17 @@ def handle_negation(text):
     for pattern, replacement in negations.items():
         text = re.sub(pattern, replacement, text)  # Mengganti frasa dengan makna positif
     return text
+
+# Fungsi untuk mendeteksi apakah teks hanya berisi angka atau simbol
+def is_invalid_input(text):
+    """
+    Mengecek apakah teks hanya berisi angka, mention, URL, atau simbol lain yang tidak bermakna.
+    """
+    if not text.strip():  # Jika input kosong setelah dihapus spasi
+        return True
+    if re.fullmatch(r'[\d\s\W]+', text):  # Jika hanya mengandung angka atau simbol
+        return True
+    return False
 
 # Inisialisasi Streamlit untuk tampilan web aplikasi
 st.title("Analisis Sentimen Kampus Merdeka")  # Judul aplikasi
@@ -67,21 +77,27 @@ user_input = st.text_area("Masukkan teks di sini", "")
 # Tombol untuk melakukan analisis sentimen
 if st.button("Analisis Sentimen"):
     if user_input:  # Pastikan input tidak kosong
-        # Langkah 1: Preprocessing teks
-        cleaned_text = preprocess_text(user_input)
-        cleaned_text = handle_negation(cleaned_text)  # Tangani negasi agar model lebih akurat
-        
-        # Langkah 2: Transformasi teks ke bentuk vektor TF-IDF
-        text_tfidf = tfidf_vectorizer.transform([cleaned_text])
-        
-        # Langkah 3: Prediksi sentimen menggunakan model SVM
-        prediction = svm_model.predict(text_tfidf)
-        
-        # Langkah 4: Mapping hasil prediksi (0 = Negatif, 1 = Positif)
-        sentiment_map = {0: "Negatif", 1: "Positif"}  
-        sentiment = sentiment_map.get(prediction[0], "Tidak diketahui")  # Jika tidak dikenali, tampilkan "Tidak diketahui"
+        if is_invalid_input(user_input):  # Cek apakah input tidak valid
+            st.write("**Maaf, tidak bisa memprediksi angka, simbol, atau mention.**")
+        else:
+            # Langkah 1: Preprocessing teks
+            cleaned_text = preprocess_text(user_input)
+            cleaned_text = handle_negation(cleaned_text)  # Tangani negasi agar model lebih akurat
+            
+            # Langkah 2: Transformasi teks ke bentuk vektor TF-IDF
+            text_tfidf = tfidf_vectorizer.transform([cleaned_text])
+            
+            # Langkah 3: Prediksi sentimen menggunakan model SVM
+            prediction = svm_model.predict(text_tfidf)
+            
+            # Langkah 4: Mapping hasil prediksi (0 = Negatif, 1 = Positif)
+            sentiment_map = {0: "Negatif", 1: "Positif"}  
+            sentiment = sentiment_map.get(prediction[0], "Tidak diketahui")  # Jika tidak dikenali, tampilkan "Tidak diketahui"
 
-        # Langkah 5: Menampilkan hasil prediksi ke pengguna
-        st.write(f"Hasil analisis sentimen: **{sentiment}**")
+            # Langkah 5: Menampilkan hasil prediksi ke pengguna
+            st.write(f"Hasil analisis sentimen: **{sentiment}**")
     else:
         st.write("Silakan masukkan teks untuk dianalisis.")  # Pesan jika input kosong
+
+# Tambahkan nama di bagian bawah
+st.write("\n\n---\n**Hanun Salsabila 21.11.4144**")
