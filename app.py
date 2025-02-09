@@ -1,14 +1,10 @@
 import streamlit as st
-import pandas as pd
 import re
 import string
 import nltk
 import emoji
-import numpy as np
 import os
 import joblib
-from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
@@ -35,20 +31,22 @@ def preprocess_text(kalimat):
     kalimat = ''.join(c for c in kalimat if not emoji.is_emoji(c))  # Hapus emoji
     return kalimat.lower()
 
-# Fungsi untuk menangani negasi (contoh: "tidak jelek" → "bagus")
+# Fungsi menangani negasi dengan regex
 def handle_negation(text):
     negations = {
-        "tidak jelek": "bagus",
-        "tidak buruk": "baik",
-        "tidak gagal": "sukses",
-        "tidak bodoh": "pintar",
-        "tidak lambat": "cepat",
-        "tidak mahal": "murah",
-        "tidak buruk": "baik",
-        "bukan masalah": "bukanmasalah"  # Bisa digabung sebagai satu kata agar tidak dihapus oleh stopword remover
+        r"\btidak jelek\b": "bagus",
+        r"\btidak buruk\b": "baik",
+        r"\btidak gagal\b": "sukses",
+        r"\btidak bodoh\b": "pintar",
+        r"\btidak lambat\b": "cepat",
+        r"\btidak mahal\b": "murah",
+        r"\btidak buruk\b": "baik",
+        r"\btidak sulit\b": "mudah",
+        r"\btidak salah\b": "benar",
+        r"\btidak lemah\b": "kuat"
     }
-    for neg, pos in negations.items():
-        text = text.replace(neg, pos)
+    for pattern, replacement in negations.items():
+        text = re.sub(pattern, replacement, text)
     return text
 
 # Inisialisasi Streamlit
@@ -70,8 +68,8 @@ if st.button("Analisis Sentimen"):
         # Prediksi Sentimen
         prediction = svm_model.predict(text_tfidf)
         
-        # Mapping label sentimen
-        sentiment_map = {0: "Negatif", 1: "Netral", 2: "Positif"}  # Sesuaikan dengan label model
+        # Mapping label sentimen hanya 2 kelas
+        sentiment_map = {0: "Negatif", 1: "Positif"} 
         sentiment = sentiment_map.get(prediction[0], "Tidak diketahui")
 
         # Output hasil
